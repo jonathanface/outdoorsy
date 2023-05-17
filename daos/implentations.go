@@ -1,11 +1,13 @@
 package daos
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"outdoorsy/models"
 	"strconv"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -62,97 +64,109 @@ func (d *DAO) GetRentalByID(rentalID int) (*models.Rental, error) {
 }
 
 func (d *DAO) GetRentals(priceMin, priceMax, limit, offset int, ids []int, near []float64, sort string) (rentals []*models.Rental, err error) {
-	query := "SELECT r.*, u.id AS sub_user_id, u.first_name, u.last_name FROM rentals r, users u"
-	// Add WHERE clauses for filtering by price range
+	// Build the placeholders and arguments for the query
+	placeholders := []string{}
+	args := []interface{}{}
+	argIndex := 1
+
 	if priceMin > 0 {
-		query += " WHERE price >= " + strconv.Itoa(priceMin)
+		placeholders = append(placeholders, "price_per_day >= $"+strconv.Itoa(argIndex))
+		args = append(args, priceMin)
+		argIndex++
 	}
 	if priceMax > 0 {
-		if priceMin > 0 {
-			query += " AND"
-		} else {
-			query += " WHERE"
-		}
-		query += " price <= " + strconv.Itoa(priceMax)
+		placeholders = append(placeholders, "price_per_day <= $"+strconv.Itoa(argIndex))
+		args = append(args, priceMax)
+		argIndex++
 	}
-
-	// Add WHERE clauses for filtering by rental IDs
 	if len(ids) > 0 {
-		idStr := ""
+		idPlaceholders := []string{}
+		for range ids {
+			idPlaceholders = append(idPlaceholders, "$"+strconv.Itoa(argIndex))
+			argIndex++
+		}
+		placeholders = append(placeholders, "id IN ("+strings.Join(idPlaceholders, ", ")+")")
+		idArgs := make([]interface{}, len(ids))
 		for i, id := range ids {
-			if i > 0 {
-				idStr += ","
-			}
-			idStr += strconv.Itoa(id)
+			idArgs[i] = id
 		}
-		if priceMin > 0 || priceMax > 0 {
-			query += " AND"
-		} else {
-			query += " WHERE"
-		}
-		query += " id IN (" + idStr + ")"
-	}
 
-	// Add WHERE clauses for filtering by proximity
+		// Append idArgs to args
+		args = append(args, idArgs...)
+	}
 	if len(near) == 2 {
 		lat := near[0]
 		lng := near[1]
-		if priceMin > 0 || priceMax > 0 || len(ids) > 0 {
-			query += " AND"
-		} else {
-			query += " WHERE"
-		}
-		query += fmt.Sprintf(" ST_DWithin(ST_MakePoint(%f, %f)::geography, ST_MakePoint(lng, lat)::geography, 100 * 1609.34)", lng, lat)
+		radius := 100.0 // in miles
+		placeholders = append(placeholders, fmt.Sprintf("ST_DWithin(ST_MakePoint(%f, %f)::geography, ST_MakePoint(lng, lat)::geography, %f * 1609.34)", lng, lat, radius))
 	}
-	if priceMin > 0 || priceMax > 0 || len(ids) > 0 || len(near) == 2 {
-		query += " AND"
-	} else {
-		query += " WHERE"
-	}
-	query += " u.id = r.user_id"
 
-	// Add ORDER BY clause for sorting
+	// Construct the WHERE clause from the placeholders
+	whereClause := ""
+	if len(placeholders) > 0 {
+		whereClause = "WHERE " + strings.Join(placeholders, " AND ")
+	}
+
+	// Construct the ORDER BY clause based on the sort parameter
+	sortClause := ""
 	switch sort {
 	case "price_asc":
-		query += " ORDER BY price_per_day ASC"
+		sortClause = " ORDER BY r.price_per_day ASC"
 	case "price_desc":
-		query += " ORDER BY price_per_day DESC"
+		sortClause = " ORDER BY r.price_per_day DESC"
 	case "year_asc":
-		query += " ORDER BY vehicle_year ASC"
+		sortClause = " ORDER BY r.vehicle_year ASC"
 	case "year_desc":
-		query += " ORDER BY vehicle_year DESC"
+		sortClause = " ORDER BY r.vehicle_year DESC"
 	case "make_asc":
-		query += " ORDER BY vehicle_make ASC"
+		sortClause = " ORDER BY r.vehicle_make ASC"
 	case "make_desc":
-		query += " ORDER BY vehicle_make DESC"
+		sortClause = " ORDER BY r.vehicle_make DESC"
 	case "type_asc":
-		query += " ORDER BY type ASC"
+		sortClause = " ORDER BY r.type ASC"
 	case "type_desc":
-		query += " ORDER BY type DESC"
+		sortClause = " ORDER BY r.type DESC"
 	case "created_asc":
-		query += " ORDER BY created ASC"
+		sortClause = " ORDER BY r.created ASC"
 	case "created_desc":
-		query += " ORDER BY created DESC"
+		sortClause = " ORDER BY r.created DESC"
 	case "updated_asc":
-		query += " ORDER BY updated ASC"
+		sortClause = " ORDER BY r.updated ASC"
 	case "updated_desc":
-		query += " ORDER BY updated DESC"
+		sortClause = " ORDER BY r.updated DESC"
+	// Add other cases for different sort options
+	default:
+		// Default sorting if no valid sort option is provided
+		sortClause = "ORDER BY created DESC"
 	}
+
+	// Construct the final query
+	query := fmt.Sprintf("SELECT r.*, u.id AS sub_user_id, u.first_name, u.last_name FROM rentals r JOIN users u ON u.id = r.user_id %s %s", whereClause, sortClause)
 
 	// Add LIMIT and OFFSET clauses for pagination
 	if limit > 0 {
-		query += " LIMIT " + strconv.Itoa(limit)
+		query += " LIMIT $1"
+		args = append([]interface{}{limit}, args...)
 	}
 	if offset > 0 {
-		query += " OFFSET " + strconv.Itoa(offset)
+		query += " OFFSET $2"
+		args = append([]interface{}{offset}, args...)
 	}
+
+	// Prepare the SQL statement
 	stmt, err := d.dbClient.Preparex(query)
 	if err != nil {
 		return nil, err
 	}
-	err = stmt.Select(&rentals)
+
+	// Execute the SQL statement and fetch the results
+	err = stmt.Select(&rentals, args...)
 	if err != nil {
 		return nil, err
 	}
+	if len(rentals) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
 	return rentals, nil
 }
