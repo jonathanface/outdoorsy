@@ -45,7 +45,11 @@ func main() {
 	log.Println("Launching demo version", os.Getenv("VERSION"))
 	log.Println("Listening for http on " + httpPort)
 
-	dao = daos.NewDAO()
+	var err error
+	dao, err = daos.NewDAO()
+	if err != nil {
+		panic(err)
+	}
 	_, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

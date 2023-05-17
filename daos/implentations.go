@@ -18,7 +18,7 @@ type DAO struct {
 	dbClient *sqlx.DB
 }
 
-func NewDAO() *DAO {
+func NewDAO() (*DAO, error) {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -30,16 +30,16 @@ func NewDAO() *DAO {
 
 	db, err := sqlx.Open("postgres", psqlInfo)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = db.Ping()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	dao := DAO{
 		dbClient: db,
 	}
-	return &dao
+	return &dao, err
 }
 
 func (d *DAO) CloseDB() {
