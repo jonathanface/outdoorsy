@@ -62,6 +62,7 @@ func main() {
 
 	// GETs
 	apiPath.HandleFunc("/rentals/{rentalID}", api.RentalEndPoint).Methods("GET", "OPTIONS")
+	apiPath.HandleFunc("/rentals", api.MultiRentalEndPoint).Methods("GET", "OPTIONS")
 
 	apiPath.Use(middleware)
 	http.Handle("/", rtr)
