@@ -141,11 +141,14 @@ func (d *DAO) GetRentals(priceMin, priceMax, limit, offset int, ids []int, near 
 
 	// Add LIMIT and OFFSET clauses for pagination
 	if limit > 0 {
-		query += " LIMIT $6"
+		query += " LIMIT $" + strconv.Itoa(argIndex)
+		argIndex++
+		fmt.Println("args", args)
 		args = append([]interface{}{limit}, args...)
 	}
 	if offset > 0 {
-		query += " OFFSET $7"
+		query += " OFFSET $" + strconv.Itoa(argIndex)
+		argIndex++
 		args = append([]interface{}{offset}, args...)
 	}
 
