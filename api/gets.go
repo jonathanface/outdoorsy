@@ -7,15 +7,24 @@ import (
 	"net/url"
 	"outdoorsy/daos"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
 var allowedSortValues = map[string]bool{
-	"price_asc":   true,
-	"price_desc":  true,
-	"rating_asc":  true,
-	"rating_desc": true,
+	"price_asc":    true,
+	"price_desc":   true,
+	"year_asc":     true,
+	"year_desc":    true,
+	"make_asc":     true,
+	"make_desc":    true,
+	"type_asc":     true,
+	"type_desc":    true,
+	"created_asc":  true,
+	"created_desc": true,
+	"updated_asc":  true,
+	"updated_desc": true,
 }
 
 func RentalEndPoint(w http.ResponseWriter, r *http.Request) {
@@ -102,27 +111,38 @@ func MultiRentalEndPoint(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ids := queryParams["ids"]
+	ids := queryParams.Get("ids")
 	if len(ids) > 0 {
-		for _, idStr := range ids {
-			id, err := strconv.Atoi(idStr)
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Invalid value for ids: %s", idStr))
-				return
+		idsStrSlice := strings.Split(ids, ",")
+		fmt.Println("ids split", idsStrSlice)
+		if len(idsStrSlice) > 0 {
+			for _, idStr := range idsStrSlice {
+				id, err := strconv.Atoi(idStr)
+				if err != nil {
+					respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Invalid value for ids: %s", idStr))
+					return
+				}
+				idsSlice = append(idsSlice, id)
 			}
-			idsSlice = append(idsSlice, id)
 		}
+
 	}
 
-	nearValues := queryParams["near"]
-	if len(nearValues) == 2 {
-		for _, nearStr := range nearValues {
-			nearFloat, err := strconv.ParseFloat(nearStr, 64)
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Invalid value for near: %s", nearStr))
-				return
+	nearValues := queryParams.Get("near")
+	if len(nearValues) > 0 {
+		nearStrSlice := strings.Split(nearValues, ",")
+		if len(nearStrSlice) == 2 {
+			for _, nearStr := range nearStrSlice {
+				nearFloat, err := strconv.ParseFloat(nearStr, 64)
+				if err != nil {
+					respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Invalid value for near: %s", nearStr))
+					return
+				}
+				nearSlice = append(nearSlice, nearFloat)
 			}
-			nearSlice = append(nearSlice, nearFloat)
+		} else {
+			respondWithError(w, http.StatusBadRequest, "wrong number of coordinates in near param")
+			return
 		}
 	}
 

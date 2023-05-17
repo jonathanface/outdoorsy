@@ -48,7 +48,7 @@ func (d *DAO) CloseDB() {
 }
 
 func (d *DAO) GetRentalByID(rentalID int) (*models.Rental, error) {
-	stmt, err := d.dbClient.Preparex("SELECT * FROM rentals r, users u WHERE r.id=$1 AND r.user_id=u.id")
+	stmt, err := d.dbClient.Preparex("SELECT r.*, u.id AS sub_user_id, u.first_name, u.last_name FROM rentals r, users u WHERE r.id = $1")
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (d *DAO) GetRentalByID(rentalID int) (*models.Rental, error) {
 }
 
 func (d *DAO) GetRentals(priceMin, priceMax, limit, offset int, ids []int, near []float64, sort string) (rentals []*models.Rental, err error) {
-	query := "SELECT * FROM rentals"
+	query := "SELECT r.*, u.id AS sub_user_id, u.first_name, u.last_name FROM rentals r, users u"
 	// Add WHERE clauses for filtering by price range
 	if priceMin > 0 {
 		query += " WHERE price >= " + strconv.Itoa(priceMin)
@@ -102,19 +102,41 @@ func (d *DAO) GetRentals(priceMin, priceMax, limit, offset int, ids []int, near 
 		} else {
 			query += " WHERE"
 		}
-		query += " ST_DWithin(location, ST_MakePoint(" + strconv.FormatFloat(lng, 'f', -1, 64) + "," + strconv.FormatFloat(lat, 'f', -1, 64) + "), 1000)"
+		query += fmt.Sprintf(" ST_DWithin(ST_MakePoint(%f, %f)::geography, ST_MakePoint(lng, lat)::geography, 100 * 1609.34)", lng, lat)
 	}
+	if priceMin > 0 || priceMax > 0 || len(ids) > 0 || len(near) == 2 {
+		query += " AND"
+	} else {
+		query += " WHERE"
+	}
+	query += " u.id = r.user_id"
 
 	// Add ORDER BY clause for sorting
 	switch sort {
 	case "price_asc":
-		query += " ORDER BY price ASC"
+		query += " ORDER BY price_per_day ASC"
 	case "price_desc":
-		query += " ORDER BY price DESC"
-	case "rating_asc":
-		query += " ORDER BY rating ASC"
-	case "rating_desc":
-		query += " ORDER BY rating DESC"
+		query += " ORDER BY price_per_day DESC"
+	case "year_asc":
+		query += " ORDER BY vehicle_year ASC"
+	case "year_desc":
+		query += " ORDER BY vehicle_year DESC"
+	case "make_asc":
+		query += " ORDER BY vehicle_make ASC"
+	case "make_desc":
+		query += " ORDER BY vehicle_make DESC"
+	case "type_asc":
+		query += " ORDER BY type ASC"
+	case "type_desc":
+		query += " ORDER BY type DESC"
+	case "created_asc":
+		query += " ORDER BY created ASC"
+	case "created_desc":
+		query += " ORDER BY created DESC"
+	case "updated_asc":
+		query += " ORDER BY updated ASC"
+	case "updated_desc":
+		query += " ORDER BY updated DESC"
 	}
 
 	// Add LIMIT and OFFSET clauses for pagination
