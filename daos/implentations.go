@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -19,9 +18,6 @@ type DAO struct {
 }
 
 func NewDAO() (*DAO, error) {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		os.Getenv("PGSQL_HOST"), os.Getenv("PGSQL_PORT"),
