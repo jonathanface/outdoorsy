@@ -17,4 +17,30 @@ VERSION=PRODUCTION_V1
 
 5. Hit http://localhost/api/rentals or http://localhost/api/rentals/[RENTAL_ID] 
 
+Supported parameters:
+```
+  price_min  int
+	price_max int
+	limit     int
+	offset    int
+	ids       comma,separated,ints
+	near      comma,separated,float,pair
+	Sort      string
+  ```
+Sorting options:
+```
+  price_asc
+  price_desc
+  year_asc
+  year_desc
+  make_asc
+  make_desc
+  type_asc
+  type_desc
+  created_asc
+  created_desc
+  updated_asc
+  updated_desc
+```
+
 5. To test just run go test ./...
