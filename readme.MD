@@ -19,7 +19,7 @@ VERSION=PRODUCTION_V1
 
 Supported parameters:
 ```
-  price_min  int
+  	price_min  int
 	price_max int
 	limit     int
 	offset    int
