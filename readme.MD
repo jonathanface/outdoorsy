@@ -15,4 +15,6 @@ VERSION=PRODUCTION_V1
 
 4. In another command prompt, in your repo's root directory, go build && sudo ./outdoorsy
 
+5. Hit http://localhost/api/rentals or http://localhost/api/rentals/[RENTAL_ID] 
+
 5. To test just run go test ./...
