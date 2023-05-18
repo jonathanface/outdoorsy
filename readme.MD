@@ -19,7 +19,7 @@ Rest API demo
 
 Supported parameters:
 ```
-	price_min  int
+	price_min int
 	price_max int
 	limit     int
 	offset    int
