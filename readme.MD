@@ -4,12 +4,12 @@ Rest API demo
 
 2. Create a .env file in the root directory with the following parameters:
 ```
-PGSQL_HOST=localhost
-PGSQL_USER=root
-PGSQL_PASS=root
-PGSQL_PORT=5434
-PGSQL_DB=testingwithrentals
-VERSION=PRODUCTION_V1
+	PGSQL_HOST=localhost
+	PGSQL_USER=root
+	PGSQL_PASS=root
+	PGSQL_PORT=5434
+	PGSQL_DB=testingwithrentals
+	VERSION=PRODUCTION_V1
 ```
 3. From a command prompt, in your repo's root directory, docker-compose up
 
@@ -19,7 +19,7 @@ VERSION=PRODUCTION_V1
 
 Supported parameters:
 ```
-  	price_min  int
+	price_min  int
 	price_max int
 	limit     int
 	offset    int
@@ -29,18 +29,18 @@ Supported parameters:
   ```
 Sorting options:
 ```
-  price_asc
-  price_desc
-  year_asc
-  year_desc
-  make_asc
-  make_desc
-  type_asc
-  type_desc
-  created_asc
-  created_desc
-  updated_asc
-  updated_desc
+	price_asc
+	price_desc
+	year_asc
+	year_desc
+	make_asc
+	make_desc
+	type_asc
+	type_desc
+	created_asc
+	created_desc
+	updated_asc
+	updated_desc
 ```
 
 5. To test just run go test ./...
