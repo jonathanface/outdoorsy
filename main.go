@@ -21,12 +21,17 @@ const (
 	httpPort    = ":80"
 )
 
+var logger = logrus.New()
+
+func init() {
+	logger.SetFormatter(&logrus.JSONFormatter{})
+	//logger.ReportCaller = true
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	logger := logrus.New()
-	logger.SetFormatter(&logrus.JSONFormatter{})
 
 	logger.Info("Launching demo version: ", os.Getenv("VERSION"))
 	logger.Info("Listening for HTTP on", httpPort)
@@ -93,6 +98,8 @@ func middleware(dao *daos.DAO) mux.MiddlewareFunc {
 
 			ctx = context.WithValue(ctx, "dao", dao)
 			r = r.WithContext(ctx)
+
+			logger.Info(r.RemoteAddr, " requesting ", r.Method, " on ", r.RequestURI)
 
 			next.ServeHTTP(w, r)
 		})

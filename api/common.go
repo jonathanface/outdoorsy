@@ -2,15 +2,25 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
+var logger = logrus.New()
+
+func init() {
+	logger.SetFormatter(&logrus.JSONFormatter{})
+	logger.ReportCaller = true
+}
+
 func respondWithError(w http.ResponseWriter, code int, msg string) {
+	err := fmt.Errorf(msg)
+	logger.Error(err)
 	respondWithJson(w, code, map[string]string{"error": msg})
 }
 
@@ -45,7 +55,7 @@ func validateQuerySortParameters(values url.Values) (params queryParams, err err
 	if priceMinStr != "" {
 		params.PriceMin, err = strconv.Atoi(priceMinStr)
 		if err != nil {
-			return params, errors.New("error parsing min price: " + err.Error())
+			return params, fmt.Errorf("error parsing min price: %s", priceMinStr)
 		}
 
 	}
@@ -54,7 +64,7 @@ func validateQuerySortParameters(values url.Values) (params queryParams, err err
 	if priceMaxStr != "" {
 		params.PriceMax, err = strconv.Atoi(priceMaxStr)
 		if err != nil {
-			return params, errors.New("error parsing max price: " + err.Error())
+			return params, fmt.Errorf("error parsing max price: %s", priceMaxStr)
 		}
 	}
 
@@ -62,7 +72,7 @@ func validateQuerySortParameters(values url.Values) (params queryParams, err err
 	if limitStr != "" {
 		params.Limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			return params, errors.New("error parsing limit: " + err.Error())
+			return params, fmt.Errorf("error parsing limit: %s", limitStr)
 		}
 	}
 
@@ -70,7 +80,7 @@ func validateQuerySortParameters(values url.Values) (params queryParams, err err
 	if offsetStr != "" {
 		params.Offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			return params, errors.New("error parsing offset: " + err.Error())
+			return params, fmt.Errorf("error parsing offset: %s", offsetStr)
 		}
 	}
 
@@ -81,7 +91,7 @@ func validateQuerySortParameters(values url.Values) (params queryParams, err err
 			for _, idStr := range idsStrSlice {
 				id, err := strconv.Atoi(idStr)
 				if err != nil {
-					return params, fmt.Errorf("Invalid value for ids: %s", idStr)
+					return params, fmt.Errorf("invalid value for ids: %s", idStr)
 				}
 				params.IdsSlice = append(params.IdsSlice, id)
 			}
@@ -96,19 +106,19 @@ func validateQuerySortParameters(values url.Values) (params queryParams, err err
 			for _, nearStr := range nearStrSlice {
 				nearFloat, err := strconv.ParseFloat(nearStr, 64)
 				if err != nil {
-					return params, fmt.Errorf("Invalid value for near: %s", nearStr)
+					return params, fmt.Errorf("invalid value for near: %s", nearStrSlice)
 				}
 				params.NearSlice = append(params.NearSlice, nearFloat)
 			}
 		} else {
-			return params, fmt.Errorf("wrong number of coordinates in near param")
+			return params, fmt.Errorf("coordinates must be exactly 2 values")
 		}
 	}
 
 	sort := values.Get("sort")
 	if sort != "" {
 		if _, ok := allowedSortValues[sort]; !ok {
-			return params, fmt.Errorf("invalid sort value: %s", sort)
+			return params, fmt.Errorf("invalid value for sort: %s", sort)
 		}
 	}
 	return

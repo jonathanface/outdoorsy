@@ -151,14 +151,12 @@ func (d *DAO) GetRentals(priceMin, priceMax, limit, offset int, ids []int, near 
 		argIndex++
 		args = append([]interface{}{offset}, args...)
 	}
-	fmt.Println("Q", query)
 
 	// Prepare the SQL statement
 	stmt, err := d.dbClient.Preparex(query)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("query", stmt)
 
 	// Execute the SQL statement and fetch the results
 	err = stmt.Select(&rentals, args...)

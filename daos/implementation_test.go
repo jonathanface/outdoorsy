@@ -110,7 +110,7 @@ func TestGetRentals(t *testing.T) {
 					AddRow(3, "Rental 3", 180.0)
 
 				// Set up the expectations
-				mock.ExpectPrepare(`SELECT r\..*, u\.id AS sub_user_id, u\.first_name, u\.last_name FROM rentals r JOIN users u ON u\.id = r\.user_id WHERE price_per_day >= \$1 AND price_per_day <= \$2 AND id IN \(\$3, \$4, \$5\) AND ST_DWithin\(ST_MakePoint\(-75.000000, 40.000000\)::geography, ST_MakePoint\(lng, lat\)::geography, 100.000000 \* 1609.34\) ORDER BY r.price_per_day ASC LIMIT \$6`).
+				mock.ExpectPrepare(`SELECT r\..*, u\.id AS sub_user_id, u\.first_name, u\.last_name FROM rentals r JOIN users u ON u\.id = r\.user_id WHERE price_per_day >= \$1 AND price_per_day <= \$2 AND r\.id IN \(\$3, \$4, \$5\) AND ST_DWithin\(ST_MakePoint\(-75.000000, 40.000000\)::geography, ST_MakePoint\(lng, lat\)::geography, 100.000000 \* 1609.34\) ORDER BY r.price_per_day ASC LIMIT \$6`).
 					ExpectQuery().
 					WithArgs(limit, priceMin, priceMax, ids[0], ids[1], ids[2]).
 					WillReturnRows(rows)
